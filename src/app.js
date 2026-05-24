@@ -5,6 +5,8 @@ const PAPER_SIZES = {
   LETTER: { label: "Letter", widthMm: 215.9, heightMm: 279.4 },
 };
 
+const ROLE_COLORS = ["#0f766e", "#b91c1c", "#1d4ed8", "#9333ea", "#c2410c", "#047857", "#be185d", "#4f46e5"];
+
 const state = {
   document: {
     title: "",
@@ -204,6 +206,45 @@ function getBlockText(block) {
   return block.runs.map((run) => run.text).join("");
 }
 
+function detectRoleName(text) {
+  const match = text.match(/^\s*([^：:\n]{1,16})\s*[：:]/);
+  if (!match) {
+    return "";
+  }
+
+  const roleName = match[1].trim();
+  if (!roleName || /[，。！？、；,.!?]/.test(roleName)) {
+    return "";
+  }
+
+  return roleName;
+}
+
+function applyRoleColors(blocks) {
+  const roleColorMap = new Map();
+
+  return blocks.map((block) => {
+    if (block.type === "heading") {
+      return block;
+    }
+
+    const role = detectRoleName(getBlockText(block));
+    if (!role) {
+      return block;
+    }
+
+    if (!roleColorMap.has(role)) {
+      roleColorMap.set(role, ROLE_COLORS[roleColorMap.size % ROLE_COLORS.length]);
+    }
+
+    return {
+      ...block,
+      role,
+      roleColor: roleColorMap.get(role),
+    };
+  });
+}
+
 function blockToHtml(block) {
   const runs = block.runs
     .map((run) => {
@@ -211,7 +252,10 @@ function blockToHtml(block) {
       return run.bold ? `<strong>${content}</strong>` : content;
     })
     .join("");
-  return `<p class="card-block ${block.type === "heading" ? "heading" : "paragraph"}">${runs}</p>`;
+  const roleStyle = block.roleColor ? ` style="--role-color: ${escapeAttribute(block.roleColor)}"` : "";
+  const roleAttribute = block.role ? ` data-role="${escapeAttribute(block.role)}"` : "";
+  const roleClass = block.roleColor ? " role-line" : "";
+  return `<p class="card-block ${block.type === "heading" ? "heading" : "paragraph"}${roleClass}"${roleStyle}${roleAttribute}>${runs}</p>`;
 }
 
 function renderBlocks(container, blocks) {
@@ -232,6 +276,8 @@ function splitBlockForPage(currentPage, block) {
     const mid = Math.ceil((low + high) / 2);
     const candidateBlock = {
       type: block.type,
+      role: block.role,
+      roleColor: block.roleColor,
       runs: unitsToRuns(units.slice(0, mid)),
     };
     if (wouldFit([...currentPage, candidateBlock])) {
@@ -244,10 +290,14 @@ function splitBlockForPage(currentPage, block) {
   return {
     head: {
       type: block.type,
+      role: block.role,
+      roleColor: block.roleColor,
       runs: unitsToRuns(units.slice(0, low)),
     },
     tail: {
       type: block.type === "heading" ? "paragraph" : block.type,
+      role: block.role,
+      roleColor: block.roleColor,
       runs: unitsToRuns(units.slice(low)),
     },
     count: low,
@@ -261,6 +311,8 @@ function paginateBlocks(blocks) {
   for (const originalBlock of blocks) {
     let block = {
       type: originalBlock.type,
+      role: originalBlock.role,
+      roleColor: originalBlock.roleColor,
       runs: originalBlock.runs.filter((run) => run.text.length > 0),
     };
 
@@ -293,12 +345,16 @@ function paginateBlocks(blocks) {
         const units = runsToUnits(block.runs);
         page.push({
           type: block.type,
+          role: block.role,
+          roleColor: block.roleColor,
           runs: unitsToRuns(units.slice(0, 1)),
         });
         pages.push(page);
         page = [];
         block = {
           type: block.type === "heading" ? "paragraph" : block.type,
+          role: block.role,
+          roleColor: block.roleColor,
           runs: unitsToRuns(units.slice(1)),
         };
       } else {
@@ -533,6 +589,9 @@ function buildPrintDocumentHtml() {
         font-size: 1.16em;
         line-height: 1.35;
       }
+      .card-block.role-line {
+        color: var(--role-color);
+      }
       .print-slot::before,
       .print-slot::after {
         content: "";
@@ -655,7 +714,7 @@ function htmlToDocument(html, title) {
     .filter((block) => block.text.trim())
     .map(({ type, runs }) => ({ type, runs }));
 
-  return { title, blocks };
+  return { title, blocks: applyRoleColors(blocks) };
 }
 
 async function importDocx(file) {
@@ -707,13 +766,13 @@ function loadSample() {
       {
         type: "paragraph",
         runs: [
-          { text: "尊敬的各位来宾、亲爱的朋友们，大家晚上好！欢迎来到本次活动现场。我是今天的主持人。" },
+          { text: "主持人A：尊敬的各位来宾、亲爱的朋友们，大家晚上好！欢迎来到本次活动现场。我是今天的主持人。" },
         ],
       },
       {
         type: "paragraph",
         runs: [
-          { text: "接下来，请允许我隆重介绍今天到场的嘉宾：" },
+          { text: "主持人B：接下来，请允许我隆重介绍今天到场的嘉宾：" },
           { text: "请大家以热烈的掌声欢迎他们。", bold: true },
         ],
       },
@@ -732,6 +791,7 @@ function loadSample() {
       },
     ],
   };
+  state.document.blocks = applyRoleColors(state.document.blocks);
   repaginate();
   setStatus(`已载入示例，生成 ${state.pages.length} 张手卡。`);
 }

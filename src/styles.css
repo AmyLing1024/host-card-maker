@@ -489,6 +489,10 @@ input[type="number"],
   line-height: 1.35;
 }
 
+.card-block.role-line {
+  color: var(--role-color);
+}
+
 .measurement-card {
   position: fixed;
   left: -10000px;
