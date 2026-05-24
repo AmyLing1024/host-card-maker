@@ -24,7 +24,7 @@ const state = {
     mode: "none",
     url: "",
     name: "",
-    color: "#f4d35e",
+    color: "#ff0000",
   },
 };
 
