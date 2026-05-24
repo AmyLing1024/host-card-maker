@@ -85,14 +85,22 @@
         </section>
 
         <section class="panel-section">
-          <label class="file-button" for="background-file">
-            <input id="background-file" type="file" accept="image/*" />
-            <span>导入背面图片</span>
-          </label>
+          <div class="background-actions" aria-label="背面背景设置">
+            <label class="file-button" for="background-file">
+              <input id="background-file" type="file" accept="image/*" />
+              <span>导入背面图片</span>
+            </label>
+            <label class="color-button" for="background-color">
+              <input id="background-color" type="color" value="#f4d35e" />
+              <span>纯色背景</span>
+            </label>
+          </div>
           <div class="background-preview" id="background-preview" hidden>
-            <img id="background-preview-image" alt="背面图片预览" />
+            <div class="background-preview-swatch" id="background-preview-swatch" aria-hidden="true">
+              <img id="background-preview-image" alt="背面图片预览" />
+            </div>
             <div>
-              <strong>已设置背面图片</strong>
+              <strong id="background-preview-title">已设置背面图片</strong>
               <small id="background-file-name"></small>
             </div>
             <button class="text-button" id="remove-background-button" type="button">移除</button>

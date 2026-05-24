@@ -121,7 +121,8 @@ select {
 
 .ghost-button,
 .primary-button,
-.file-button {
+.file-button,
+.color-button {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -129,12 +130,14 @@ select {
 }
 
 .ghost-button,
-.file-button {
+.file-button,
+.color-button {
   color: var(--ink);
   background: #ffffff;
 }
 
-.file-button {
+.file-button,
+.color-button {
   display: grid;
   place-items: center;
   padding: 0 16px;
@@ -147,6 +150,37 @@ select {
   block-size: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+.background-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.color-button {
+  grid-template-columns: 24px 1fr;
+  gap: 8px;
+}
+
+.color-button input {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.color-button input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-button input::-webkit-color-swatch {
+  border: 0;
+  border-radius: 50%;
 }
 
 .primary-button {
@@ -284,12 +318,25 @@ input[type="number"],
   display: none;
 }
 
-.background-preview img {
+.background-preview-swatch {
   width: 54px;
   height: 38px;
+  overflow: hidden;
+  background: var(--preview-back-color, #ffffff);
   object-fit: cover;
   border: 1px solid var(--line);
   border-radius: 4px;
+}
+
+.background-preview-swatch img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.background-preview-swatch img[hidden] {
+  display: none;
 }
 
 .background-preview strong,
@@ -388,6 +435,10 @@ input[type="number"],
 .background-card {
   padding: 0;
   background: #ffffff;
+}
+
+.color-background-card {
+  background: var(--back-color);
 }
 
 .background-card::after {

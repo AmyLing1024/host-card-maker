@@ -21,8 +21,10 @@ const state = {
   },
   pages: [],
   background: {
+    mode: "none",
     url: "",
     name: "",
+    color: "#f4d35e",
   },
 };
 
@@ -31,8 +33,11 @@ const els = {
   dropZone: document.querySelector("#drop-zone"),
   sampleButton: document.querySelector("#sample-button"),
   backgroundInput: document.querySelector("#background-file"),
+  backgroundColor: document.querySelector("#background-color"),
   backgroundPreview: document.querySelector("#background-preview"),
   backgroundPreviewImage: document.querySelector("#background-preview-image"),
+  backgroundPreviewSwatch: document.querySelector("#background-preview-swatch"),
+  backgroundPreviewTitle: document.querySelector("#background-preview-title"),
   backgroundFileName: document.querySelector("#background-file-name"),
   removeBackgroundButton: document.querySelector("#remove-background-button"),
   fontSize: document.querySelector("#font-size"),
@@ -320,6 +325,12 @@ function renderCard(page, index) {
 }
 
 function renderBackgroundCard(index) {
+  if (state.background.mode === "color") {
+    return `
+      <article class="host-card background-card color-background-card" data-page="${index + 1}" style="--back-color: ${escapeAttribute(state.background.color)}"></article>
+    `;
+  }
+
   return `
     <article class="host-card background-card" data-page="${index + 1}">
       <img class="background-card-image" src="${escapeAttribute(state.background.url)}" alt="" />
@@ -337,13 +348,27 @@ function renderPreview() {
 }
 
 function renderBackgroundPreview() {
-  const hasBackground = Boolean(state.background.url);
+  const hasBackground = state.background.mode === "image" || state.background.mode === "color";
   els.backgroundPreview.hidden = !hasBackground;
-  if (hasBackground) {
+  els.backgroundColor.value = state.background.color;
+
+  if (state.background.mode === "image") {
+    els.backgroundPreviewSwatch.style.removeProperty("--preview-back-color");
     els.backgroundPreviewImage.src = state.background.url;
+    els.backgroundPreviewImage.hidden = false;
+    els.backgroundPreviewTitle.textContent = "已设置背面图片";
     els.backgroundFileName.textContent = state.background.name;
-  } else {
+  } else if (state.background.mode === "color") {
+    els.backgroundPreviewSwatch.style.setProperty("--preview-back-color", state.background.color);
     els.backgroundPreviewImage.removeAttribute("src");
+    els.backgroundPreviewImage.hidden = true;
+    els.backgroundPreviewTitle.textContent = "已设置纯色背景";
+    els.backgroundFileName.textContent = state.background.color.toUpperCase();
+  } else {
+    els.backgroundPreviewSwatch.style.removeProperty("--preview-back-color");
+    els.backgroundPreviewImage.removeAttribute("src");
+    els.backgroundPreviewImage.hidden = false;
+    els.backgroundPreviewTitle.textContent = "已设置背面图片";
     els.backgroundFileName.textContent = "";
   }
 }
@@ -358,7 +383,7 @@ function renderPrintRoot() {
     }).join("");
     sheets.push(`<section class="print-sheet front-sheet" data-side="正面">${frontSlots}</section>`);
 
-    if (state.background.url) {
+    if (state.background.mode === "image" || state.background.mode === "color") {
       const backSlots = Array.from({ length: layout.cardsPerSheet }, (_, slotIndex) => {
         const page = state.pages[index + slotIndex];
         return `<div class="print-slot">${page ? renderBackgroundCard(index + slotIndex) : ""}</div>`;
@@ -375,10 +400,11 @@ function renderPrintPreview() {
   els.printPreviewPages.innerHTML = els.printRoot.innerHTML;
   setLayoutCssVars(els.printPreviewPages, layout);
   const frontSheetCount = Math.max(Math.ceil(state.pages.length / layout.cardsPerSheet), 0);
-  const totalSheetCount = state.background.url ? frontSheetCount * 2 : frontSheetCount;
+  const hasBackSide = state.background.mode === "image" || state.background.mode === "color";
+  const totalSheetCount = hasBackSide ? frontSheetCount * 2 : frontSheetCount;
   els.previewSheetCount.textContent = `${totalSheetCount} 页 ${layout.paper.label}`;
-  els.previewPrintMode.textContent = state.background.url
-    ? `正面文字 + 背面图片，${getLayoutSummary(layout)}`
+  els.previewPrintMode.textContent = hasBackSide
+    ? `正面文字 + ${state.background.mode === "color" ? "纯色背景" : "背面图片"}，${getLayoutSummary(layout)}`
     : `${getLayoutSummary(layout)}，每页 ${layout.cardsPerSheet} 张手卡`;
   updatePrintPreviewScale();
 }
@@ -479,6 +505,9 @@ function buildPrintDocumentHtml() {
       .background-card {
         padding: 0;
         background: #ffffff;
+      }
+      .color-background-card {
+        background: var(--back-color);
       }
       .background-card::after {
         display: none;
@@ -724,8 +753,10 @@ function handleBackgroundFile(file) {
   const reader = new FileReader();
   reader.addEventListener("load", () => {
     state.background = {
+      mode: "image",
       url: String(reader.result || ""),
       name: file.name,
+      color: state.background.color,
     };
     renderBackgroundPreview();
     renderPrintRoot();
@@ -788,8 +819,25 @@ els.backgroundInput.addEventListener("change", (event) => {
   }
 });
 
+els.backgroundColor.addEventListener("input", () => {
+  state.background = {
+    ...state.background,
+    mode: "color",
+    url: "",
+    name: "",
+    color: els.backgroundColor.value,
+  };
+  els.backgroundInput.value = "";
+  renderBackgroundPreview();
+  renderPrintRoot();
+  if (!els.printPreviewModal.hidden) {
+    renderPrintPreview();
+  }
+  setStatus(`已设置纯色背景：${state.background.color.toUpperCase()}。`);
+});
+
 els.removeBackgroundButton.addEventListener("click", () => {
-  state.background = { url: "", name: "" };
+  state.background = { ...state.background, mode: "none", url: "", name: "" };
   els.backgroundInput.value = "";
   renderBackgroundPreview();
   renderPrintRoot();
