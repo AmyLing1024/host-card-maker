@@ -63,17 +63,25 @@
             <output id="paper-orientation-value">竖排</output>
           </label>
 
-          <label>
+          <div class="settings-stepper-row">
             <span>行数</span>
-            <input id="layout-rows" type="number" min="1" max="8" value="4" />
+            <div class="stepper" role="group" aria-label="设置行数">
+              <button type="button" class="stepper-button" data-step-target="layout-rows" data-step-delta="-1">−</button>
+              <input id="layout-rows" type="text" inputmode="numeric" pattern="[0-9]*" value="4" aria-label="行数" />
+              <button type="button" class="stepper-button" data-step-target="layout-rows" data-step-delta="1">+</button>
+            </div>
             <output id="layout-rows-value">4 行</output>
-          </label>
+          </div>
 
-          <label>
+          <div class="settings-stepper-row">
             <span>列数</span>
-            <input id="layout-columns" type="number" min="1" max="8" value="1" />
+            <div class="stepper" role="group" aria-label="设置列数">
+              <button type="button" class="stepper-button" data-step-target="layout-columns" data-step-delta="-1">−</button>
+              <input id="layout-columns" type="text" inputmode="numeric" pattern="[0-9]*" value="1" aria-label="列数" />
+              <button type="button" class="stepper-button" data-step-target="layout-columns" data-step-delta="1">+</button>
+            </div>
             <output id="layout-columns-value">1 列</output>
-          </label>
+          </div>
         </section>
 
         <section class="panel-section">

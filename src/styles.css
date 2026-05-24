@@ -175,7 +175,8 @@ select {
   font-weight: 700;
 }
 
-.settings-grid label {
+.settings-grid label,
+.settings-stepper-row {
   display: grid;
   grid-template-columns: 54px 1fr 58px;
   gap: 10px;
@@ -195,7 +196,8 @@ input[type="range"] {
 }
 
 select,
-input[type="number"] {
+input[type="number"],
+.stepper input {
   width: 100%;
   min-height: 32px;
   padding: 3px 8px;
@@ -205,8 +207,41 @@ input[type="number"] {
   border-radius: 6px;
 }
 
-input[type="number"] {
+.stepper {
+  display: grid;
+  grid-template-columns: 34px minmax(42px, 1fr) 34px;
+  min-height: 34px;
+}
+
+.stepper-button {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.stepper-button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.stepper-button:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.stepper input {
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
   font-variant-numeric: tabular-nums;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .stat-row {
@@ -317,6 +352,7 @@ input[type="number"] {
   display: grid;
   gap: 28px;
   justify-content: center;
+  --screen-card-scale: 1;
 }
 
 .host-card {
@@ -331,6 +367,12 @@ input[type="number"] {
   font-size: var(--card-font-size, 24pt);
   line-height: var(--card-line-height, 1.55);
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+
+.cards-preview > .host-card {
+  transform: scale(var(--screen-card-scale));
+  transform-origin: top center;
+  margin-bottom: var(--screen-card-offset, 0mm);
 }
 
 .host-card::after {
@@ -572,6 +614,31 @@ input[type="number"] {
   .control-panel {
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .preview-scroll {
+    padding: 24px 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    min-width: 0;
+  }
+
+  .control-panel {
+    gap: 18px;
+    padding: 22px 18px;
+  }
+
+  .preview-toolbar {
+    min-height: auto;
+    padding: 18px;
+  }
+
+  .settings-grid label,
+  .settings-stepper-row {
+    grid-template-columns: 48px 1fr 54px;
   }
 }
 

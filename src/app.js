@@ -49,6 +49,7 @@ const els = {
   layoutRowsValue: document.querySelector("#layout-rows-value"),
   layoutColumns: document.querySelector("#layout-columns"),
   layoutColumnsValue: document.querySelector("#layout-columns-value"),
+  stepperButtons: document.querySelectorAll(".stepper-button"),
   status: document.querySelector("#status-message"),
   printButton: document.querySelector("#print-button"),
   cardCount: document.querySelector("#card-count"),
@@ -72,6 +73,10 @@ const els = {
 function setStatus(message, isError = false) {
   els.status.textContent = message;
   els.status.classList.toggle("is-error", isError);
+}
+
+function clampLayoutValue(value) {
+  return Math.max(1, Math.min(8, Number.parseInt(value, 10) || 1));
 }
 
 function getPaperDimensions(settings = state.settings) {
@@ -107,6 +112,15 @@ function setLayoutCssVars(node, layout = getLayout()) {
   node.style.setProperty("--layout-columns", String(layout.columns));
 }
 
+function updateScreenPreviewScale() {
+  const layout = getLayout();
+  const availableWidth = Math.max(els.preview?.parentElement?.clientWidth - 28 || 320, 240);
+  const cardWidthPx = layout.cardWidthMm * (96 / 25.4);
+  const scale = Math.min(1, Math.max(0.28, availableWidth / cardWidthPx));
+  els.preview.style.setProperty("--screen-card-scale", scale.toFixed(4));
+  els.preview.style.setProperty("--screen-card-offset", `${((scale - 1) * layout.cardHeightMm).toFixed(2)}mm`);
+}
+
 function getLayoutSummary(layout = getLayout()) {
   const orientationLabel = state.settings.paperOrientation === "landscape" ? "横排" : "竖排";
   return `${layout.paper.label} ${orientationLabel} ${layout.rows} 行 × ${layout.columns} 列`;
@@ -129,8 +143,11 @@ function syncCssSettings() {
   els.paperOrientationValue.textContent = state.settings.paperOrientation === "landscape" ? "横排" : "竖排";
   els.layoutRowsValue.textContent = `${layout.rows} 行`;
   els.layoutColumnsValue.textContent = `${layout.columns} 列`;
+  els.layoutRows.value = String(layout.rows);
+  els.layoutColumns.value = String(layout.columns);
   els.printLayoutSummary.textContent = getLayoutSummary(layout);
   els.previewLayoutSummary.textContent = `${getLayoutSummary(layout)}预览`;
+  updateScreenPreviewScale();
 }
 
 function escapeText(text) {
@@ -723,6 +740,20 @@ function handleBackgroundFile(file) {
   reader.readAsDataURL(file);
 }
 
+function applyLayoutSettings(showStatus = true) {
+  state.settings.paperSize = els.paperSize.value;
+  state.settings.paperOrientation = els.paperOrientation.value;
+  state.settings.layoutRows = clampLayoutValue(els.layoutRows.value);
+  state.settings.layoutColumns = clampLayoutValue(els.layoutColumns.value);
+  repaginate();
+  if (!els.printPreviewModal.hidden) {
+    renderPrintPreview();
+  }
+  if (showStatus && state.document.blocks.length) {
+    setStatus(`已按 ${getLayoutSummary()} 重新排版，当前 ${state.pages.length} 张手卡。`);
+  }
+}
+
 els.fileInput.addEventListener("change", (event) => {
   const file = event.target.files?.[0];
   if (file) {
@@ -780,21 +811,31 @@ for (const input of [els.fontSize, els.lineHeight, els.marginMm]) {
   });
 }
 
-for (const input of [els.paperSize, els.paperOrientation, els.layoutRows, els.layoutColumns]) {
+for (const input of [els.paperSize, els.paperOrientation]) {
   input.addEventListener("input", () => {
-    state.settings.paperSize = els.paperSize.value;
-    state.settings.paperOrientation = els.paperOrientation.value;
-    state.settings.layoutRows = Math.max(1, Math.min(8, Number(els.layoutRows.value) || 1));
-    state.settings.layoutColumns = Math.max(1, Math.min(8, Number(els.layoutColumns.value) || 1));
-    els.layoutRows.value = String(state.settings.layoutRows);
-    els.layoutColumns.value = String(state.settings.layoutColumns);
-    repaginate();
-    if (!els.printPreviewModal.hidden) {
-      renderPrintPreview();
+    applyLayoutSettings();
+  });
+}
+
+for (const input of [els.layoutRows, els.layoutColumns]) {
+  input.addEventListener("input", () => {
+    input.value = input.value.replace(/[^\d]/g, "").slice(0, 1);
+    if (input.value) {
+      applyLayoutSettings();
     }
-    if (state.document.blocks.length) {
-      setStatus(`已按 ${getLayoutSummary()} 重新排版，当前 ${state.pages.length} 张手卡。`);
-    }
+  });
+  input.addEventListener("blur", () => {
+    input.value = String(clampLayoutValue(input.value));
+    applyLayoutSettings();
+  });
+}
+
+for (const button of els.stepperButtons) {
+  button.addEventListener("click", () => {
+    const target = button.dataset.stepTarget === "layout-columns" ? els.layoutColumns : els.layoutRows;
+    const delta = Number(button.dataset.stepDelta) || 0;
+    target.value = String(clampLayoutValue(clampLayoutValue(target.value) + delta));
+    applyLayoutSettings();
   });
 }
 
@@ -818,6 +859,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("resize", () => {
+  updateScreenPreviewScale();
   if (!els.printPreviewModal.hidden) {
     updatePrintPreviewScale();
   }
