@@ -34,6 +34,7 @@ const els = {
   sampleButton: document.querySelector("#sample-button"),
   backgroundInput: document.querySelector("#background-file"),
   backgroundColor: document.querySelector("#background-color"),
+  backgroundColorSwatch: document.querySelector("#background-color-swatch"),
   backgroundPreview: document.querySelector("#background-preview"),
   backgroundPreviewImage: document.querySelector("#background-preview-image"),
   backgroundPreviewSwatch: document.querySelector("#background-preview-swatch"),
@@ -351,6 +352,7 @@ function renderBackgroundPreview() {
   const hasBackground = state.background.mode === "image" || state.background.mode === "color";
   els.backgroundPreview.hidden = !hasBackground;
   els.backgroundColor.value = state.background.color;
+  els.backgroundColorSwatch.style.setProperty("--selected-back-color", state.background.color);
 
   if (state.background.mode === "image") {
     els.backgroundPreviewSwatch.style.removeProperty("--preview-back-color");
